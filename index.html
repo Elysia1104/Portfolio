@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Full-bleed Particle Scene — cinematic camera, full-screen burst, staggered text</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=IBM+Plex+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0b0713;
+            --text: #f4eefc;
+            --muted: #c9b7e6;
+            --pearl-bg: #f6f1fb;
+            --pearl-ink: #241a33;
+            --pearl-accent: #b98ce8;
+            --font-serif: 'Fraunces', Georgia, serif;
+            --font-mono: 'IBM Plex Mono', Consolas, monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font-mono);
+        }
+
+        #gl {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            display: block;
+            transition: background-color .05s linear;
+        }
+
+        #sections {
+            position: relative;
+            z-index: 1;
+        }
+
+        .scene {
+            height: 100vh;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 8vh 7vw;
+            pointer-events: none;
+        }
+
+        .sub {
+            font-size: 12px;
+            letter-spacing: .06em;
+            color: var(--muted);
+            max-width: 520px;
+            margin-bottom: 18px;
+            line-height: 1.6;
+        }
+
+        h1,
+        h2 {
+            font-family: var(--font-serif);
+            font-weight: 600;
+            line-height: .98;
+            margin: 0;
+            font-size: clamp(2.2rem, 6.4vw, 5.2rem);
+            text-transform: uppercase;
+        }
+
+        h1 em,
+        h2 em {
+            font-style: italic;
+            font-weight: 500;
+            text-transform: none;
+            color: var(--muted);
+        }
+
+        .wave .ch {
+            display: inline-block;
+            will-change: transform, opacity;
+        }
+
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            border-radius: 100px;
+            background: #7c3aed;
+            color: #fff;
+            font-size: 11px;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            margin-bottom: 22px;
+            width: fit-content;
+        }
+
+        .caption {
+            font-size: 12.5px;
+            color: var(--muted);
+            margin-top: 20px;
+            max-width: 460px;
+            line-height: 1.6;
+        }
+
+        #about {
+            position: relative;
+            background: var(--pearl-bg);
+            color: var(--pearl-ink);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+            padding: 0 60px;
+            z-index: 1;
+        }
+
+        #about .dots {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        #about .dots span {
+            position: absolute;
+            border-radius: 50%;
+            background: #c9b7e6;
+            opacity: .35;
+        }
+
+        .about-grid {
+            position: relative;
+            z-index: 2;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            width: 100%;
+        }
+
+        .about-left .eyebrow {
+            color: var(--pearl-accent);
+            font-size: 11px;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .about-left .eyebrow .pip {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--pearl-accent);
+        }
+
+        .about-name {
+            font-family: var(--font-serif);
+            font-weight: 700;
+            font-size: clamp(2.4rem, 5vw, 4rem);
+            margin: 0;
+            line-height: 1;
+        }
+
+        .about-script {
+            font-family: var(--font-serif);
+            font-style: italic;
+            font-weight: 600;
+            color: var(--pearl-accent);
+            font-size: clamp(2.6rem, 6vw, 4.6rem);
+            line-height: 1.05;
+            margin: 0 0 26px;
+        }
+
+        .about-left p.lead {
+            color: #5a4d70;
+            max-width: 420px;
+            font-size: 14px;
+            line-height: 1.75;
+        }
+
+        .index-list {
+            position: relative;
+            border-top: 1px solid rgba(36, 26, 51, .15);
+        }
+
+        .idx-layer {
+            position: relative;
+        }
+
+        .idx-layer.bright {
+            position: absolute;
+            inset: 0;
+            color: var(--pearl-accent);
+            pointer-events: none;
+            -webkit-mask-image: radial-gradient(220px 220px at var(--mx, -500px) var(--my, -500px), black, transparent 72%);
+            mask-image: radial-gradient(220px 220px at var(--mx, -500px) var(--my, -500px), black, transparent 72%);
+        }
+
+        .idx-row {
+            display: flex;
+            align-items: baseline;
+            gap: 18px;
+            padding: 22px 4px;
+            border-bottom: 1px solid rgba(36, 26, 51, .12);
+            font-family: var(--font-serif);
+            font-weight: 500;
+            font-size: clamp(1.2rem, 2.4vw, 1.9rem);
+            will-change: transform;
+        }
+
+        .idx-layer.dim .idx-row {
+            color: rgba(36, 26, 51, .45);
+        }
+
+        .idx-row .num {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            opacity: .7;
+            width: 38px;
+            flex-shrink: 0;
+        }
+
+        @media (max-width:860px) {
+            .about-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <canvas id="gl"></canvas>
+
+    <div id="sections">
+        <section class="scene">
+            <div class="sub wave">Portfolio, Class of 2028</div>
+            <h1 class="wave"><em>Bridging</em><br>the gap between<br>Phyiscal & Digital<br>Advance defence</h1>
+        </section>
+        <section class="scene">
+            <div class="tag">Goal</div>
+            <h2 class="wave"><em>Mastering</em> <br>THREAT <br>DEFENSE<br> ANALYSIS</h2>
+            <div class="caption wave">I want to go beyond standard software security. My aim is to understand and
+                protect the critical intersection of hardware and software.</div>
+        </section>
+        <section class="scene">
+            <div class="tag">In Progress</div>
+            <h2 class="wave">PYTHON, LINUX,<br>& LABS</h2>
+            <div class="caption wave">I am actively learning by doing—building custom Python integrity tools and running
+                network attacks in my own virtualized labs.</div>
+        </section>
+        <section class="scene">
+            <div class="tag">What's Next</div>
+            <h2 class="wave">Seeking <em>THE</em><br>NEXT CHALLENGE</h2>
+            <div class="caption wave">Looking to apply my passion to real-world environments. Keep scrolling to enter
+                the archives...</div>
+        </section>
+        <section class="scene">
+            <div class="tag">Ambitious</div>
+            <h2 class="wave"><em>I</em> BUILD<br>WITH CARE FOR<br>HOW THINGS FEEL</h2>
+            <div class="caption wave">Move ahead to see my journey and progress
+            </div>
+        </section>
+        <section class="scene">
+            <div class="caption">archives...</div>
+        </section>
+        <section class="scene"></section>
+    </div>
+
+    <section id="about">
+        <div class="dots" id="dots"></div>
+        <div class="about-grid">
+            <div class="about-left">
+                <div class="eyebrow"><span class="pip"></span>About me</div>
+                <h2 class="about-name">MANIYA</h2>
+                <div class="about-script">Laxman Rawat</div>
+                <p class="lead">Engineering secure systems at the critical intersection of mechatronics and advanced
+                    cyber defense.</p>
+            </div>
+            <div class="index-list" id="idxContainer">
+                <div class="idx-layer dim">
+                    <div class="idx-row"><span class="num">(001)</span><span>Cybersecurity Labs</span></div>
+                    <div class="idx-row"><span class="num">(002)</span><span>Python Integrity Tools</span></div>
+                    <div class="idx-row"><span class="num">(003)</span><span>Mechatronics &amp; ICS</span></div>
+                    <div class="idx-row"><span class="num">(004)</span><span>Thakur College</span></div>
+                    <div class="idx-row"><span class="num">(005)</span><span>Guitar &amp; Art</span></div>
+                </div>
+                <div class="idx-layer bright" id="idxBright">
+                    <div class="idx-row"><span class="num">(001)</span><span>Cybersecurity Labs</span></div>
+                    <div class="idx-row"><span class="num">(002)</span><span>Python Integrity Tools</span></div>
+                    <div class="idx-row"><span class="num">(003)</span><span>Mechatronics &amp; ICS</span></div>
+                    <div class="idx-row"><span class="num">(004)</span><span>Thakur College</span></div>
+                    <div class="idx-row"><span class="num">(005)</span><span>Guitar &amp; Art</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        /* ============================================================
+           SHARED RIPPLE POOL
+           ============================================================ */
+        const MAX_RIPPLES = 24;
+        const rippleX = new Float32Array(MAX_RIPPLES), rippleY = new Float32Array(MAX_RIPPLES);
+        const rippleT = new Float32Array(MAX_RIPPLES).fill(-999);
+        let rippleCursor = 0, lastSpawn = 0;
+        const LIFETIME = 1.3;
+        function spawnRipple(x, y, t) { rippleX[rippleCursor] = x; rippleY[rippleCursor] = y; rippleT[rippleCursor] = t; rippleCursor = (rippleCursor + 1) % MAX_RIPPLES; }
+        function onMove(x, y) { const now = performance.now() / 1000; if (now - lastSpawn < 0.035) return; lastSpawn = now; spawnRipple(x, y, now); }
+        window.addEventListener('mousemove', e => onMove(e.pageX, e.pageY));
+        window.addEventListener('touchmove', e => { const t = e.touches[0]; if (t) onMove(t.pageX, t.pageY); }, { passive: true });
+        function getActiveRipples(now) {
+            const list = [];
+            for (let i = 0; i < MAX_RIPPLES; i++) { const age = now - rippleT[i]; if (age >= 0 && age <= LIFETIME) list.push({ x: rippleX[i], y: rippleY[i], age }); }
+            return list;
+        }
+        let mouseX = 0, mouseY = 0;
+        window.addEventListener('mousemove', e => { mouseX = (e.clientX / innerWidth - 0.5); mouseY = (e.clientY / innerHeight - 0.5); });
+
+        /* ============================================================
+           SHAPES — made BIGGER by default so the object fills real
+           screen space instead of floating small in the middle
+           ============================================================ */
+        const N = 1600;
+        function sphere(n, r = 1.6) {
+            const p = new Float32Array(n * 3); const g = Math.PI * (3 - Math.sqrt(5));
+            for (let i = 0; i < n; i++) {
+                const y = 1 - (i / (n - 1)) * 2, rad = Math.sqrt(1 - y * y), th = g * i;
+                p[i * 3] = Math.cos(th) * rad * r; p[i * 3 + 1] = y * r; p[i * 3 + 2] = Math.sin(th) * rad * r;
+            } return p;
+        }
+        function cube(n, s = 1.3) {
+            const p = new Float32Array(n * 3);
+            for (let i = 0; i < n; i++) {
+                const f = Math.floor(Math.random() * 6);
+                let x = (Math.random() * 2 - 1) * s, y = (Math.random() * 2 - 1) * s, z = (Math.random() * 2 - 1) * s;
+                if (f === 0) x = s; if (f === 1) x = -s; if (f === 2) y = s; if (f === 3) y = -s; if (f === 4) z = s; if (f === 5) z = -s;
+                p[i * 3] = x; p[i * 3 + 1] = y; p[i * 3 + 2] = z;
+            } return p;
+        }
+        function heart(n) {
+            const p = new Float32Array(n * 3);
+            for (let i = 0; i < n; i++) {
+                const t = Math.random() * Math.PI * 2;
+                let hx = 16 * Math.pow(Math.sin(t), 3);
+                let hy = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+                hx /= 16; hy /= 16;
+                const puff = 0.7 + Math.random() * 0.35;
+                p[i * 3] = hx * puff * 1.9; p[i * 3 + 1] = -hy * puff * 1.9; p[i * 3 + 2] = (Math.random() - 0.5) * 0.7;
+            } return p;
+        }
+        function ring(n, R = 1.3, r = 0.5) {
+            const p = new Float32Array(n * 3);
+            for (let i = 0; i < n; i++) {
+                const u = Math.random() * Math.PI * 2, v = Math.random() * Math.PI * 2;
+                p[i * 3] = (R + r * Math.cos(v)) * Math.cos(u); p[i * 3 + 1] = (R + r * Math.cos(v)) * Math.sin(u); p[i * 3 + 2] = r * Math.sin(v);
+            } return p;
+        }
+        function burst(n, r = 2.2) {
+            const p = new Float32Array(n * 3);
+            for (let i = 0; i < n; i++) {
+                const th = Math.random() * Math.PI * 2, ph = Math.acos(2 * Math.random() - 1), rad = Math.cbrt(Math.random()) * r;
+                p[i * 3] = rad * Math.sin(ph) * Math.cos(th); p[i * 3 + 1] = rad * Math.sin(ph) * Math.sin(th); p[i * 3 + 2] = rad * Math.cos(ph);
+            } return p;
+        }
+        function converge(n) {
+            const p = new Float32Array(n * 3);
+            for (let i = 0; i < n; i++) { p[i * 3] = (Math.random() - 0.5) * 0.06; p[i * 3 + 1] = (Math.random() - 0.5) * 0.06; p[i * 3 + 2] = (Math.random() - 0.5) * 0.06; } return p;
+        }
+        const SHAPES = [sphere(N), cube(N), heart(N), ring(N), burst(N), converge(N)];
+
+        const baseColors = new Array(N), seeds = new Float32Array(N);
+        // each particle also gets a fixed random "explode direction" + speed,
+        // used ONLY during the final burst — this is what actually spreads
+        // particles edge-to-edge instead of asymptoting to a small cluster.
+        const explodeDirX = new Float32Array(N), explodeDirY = new Float32Array(N), explodeSpeed = new Float32Array(N);
+        for (let i = 0; i < N; i++) {
+            const t = Math.random();
+            baseColors[i] = [Math.round((0.55 + t * 0.4) * 255), Math.round((0.35 + t * 0.25) * 255), 242];
+            seeds[i] = Math.random() * 10;
+            const a = Math.random() * Math.PI * 2;
+            explodeDirX[i] = Math.cos(a); explodeDirY[i] = Math.sin(a);
+            explodeSpeed[i] = 0.55 + Math.random() * 0.9; // uneven speeds = a real-looking burst, not a uniform ring
+        }
+
+        /* ============================================================
+           CANVAS + CINEMATIC "CAMERA"
+           Instead of just spinning the object and holding the camera
+           still, the camera now dollies (breathes closer/farther) and
+           drifts its tilt on its own slow clock, on TOP of the scroll-
+           driven orbit angle — that combination is what stops it from
+           reading as "a value ticking with scroll" and makes it read
+           as a camera actually moving through a scene.
+           ============================================================ */
+        const canvas = document.getElementById('gl');
+        const ctx = canvas.getContext('2d');
+        let W = innerWidth, H = innerHeight, DPR = Math.min(devicePixelRatio || 1, 2);
+        function resize() { W = innerWidth; H = innerHeight; canvas.width = W * DPR; canvas.height = H * DPR; ctx.setTransform(DPR, 0, 0, DPR, 0, 0); }
+        window.addEventListener('resize', resize); resize();
+
+        const sectionsWrap = document.getElementById('sections');
+        const TOTAL_SECTIONS = document.querySelectorAll('#sections .scene').length;
+        const ROT_PER_SECTION = Math.PI * 0.85;
+        let angle = 0;
+        const CAM_Z_BASE = 3.0;
+
+        function render() {
+            const t = performance.now() / 1000;
+            const activeRipples = getActiveRipples(t);
+
+            const wrapTop = sectionsWrap.getBoundingClientRect().top + window.scrollY;
+            const raw = (window.scrollY - wrapTop) / innerHeight;
+            const activeFloat = Math.min(Math.max(raw, 0), TOTAL_SECTIONS - 1);
+
+            const pos = Math.min(activeFloat, SHAPES.length - 1);
+            const idxA = Math.floor(pos), idxB = Math.min(idxA + 1, SHAPES.length - 1);
+            const blend = pos - idxA;
+            const shapeA = SHAPES[idxA], shapeB = SHAPES[idxB];
+            const explodeProgress = Math.min(Math.max(activeFloat - (SHAPES.length - 1), 0), 1);
+
+            // --- cinematic camera: scroll drives the main orbit angle, slow independent
+            //     sine waves add dolly breathing + tilt drift so it never feels mechanical ---
+            const targetAngle = activeFloat * ROT_PER_SECTION;
+            angle += (targetAngle - angle) * 0.055; // much slower/creamier catch-up than before
+            const rotY = angle + mouseX * 0.45;
+            const camDolly = Math.sin(t * 0.12) * 0.35;           // camera breathing in/out on its own clock
+            const tiltX = mouseY * 0.28 + Math.sin(t * 0.09) * 0.05;   // gentle autonomous tilt drift
+            const cosY = Math.cos(rotY), sinY = Math.sin(rotY), cosX = Math.cos(tiltX), sinX = Math.sin(tiltX);
+            const CAM_Z = CAM_Z_BASE + camDolly;
+
+            const cx = W / 2, cy = H * 0.42;
+            const focal = Math.min(W, H) * 1.15;
+
+            const bgT = Math.max(0, (explodeProgress - 0.4) / 0.6); // background stays dark through most of the burst
+            const pr = Math.round(11 + (246 - 11) * bgT), pg = Math.round(7 + (241 - 7) * bgT), pb = Math.round(19 + (251 - 19) * bgT);
+            canvas.style.backgroundColor = `rgb(${pr},${pg},${pb})`;
+            document.body.style.backgroundColor = `rgb(${pr},${pg},${pb})`;
+
+            ctx.clearRect(0, 0, W, H);
+            ctx.globalCompositeOperation = 'lighter';
+
+            // particles stay fully visible while spreading, only fade in the final stretch —
+            // this is what lets the burst genuinely cover the whole screen before it disappears
+            const explodeAlpha = explodeProgress < 0.7 ? 1 : Math.max(0, 1 - (explodeProgress - 0.7) / 0.3);
+            const spreadEase = Math.pow(explodeProgress, 0.6);
+            const maxSpread = Math.hypot(W, H) * 0.65;
+
+            for (let i = 0; i < N; i++) {
+                const i3 = i * 3;
+                let x = shapeA[i3] + (shapeB[i3] - shapeA[i3]) * blend;
+                let y = shapeA[i3 + 1] + (shapeB[i3 + 1] - shapeA[i3 + 1]) * blend;
+                let z = shapeA[i3 + 2] + (shapeB[i3 + 2] - shapeA[i3 + 2]) * blend;
+
+                let x1 = x * cosY + z * sinY, z1 = -x * sinY + z * cosY;
+                let y2 = y * cosX - z1 * sinX, z2 = y * sinX + z1 * cosX;
+
+                const camZ = CAM_Z + z2;
+                if (camZ <= 0.1) continue;
+                let sx = cx + x1 * focal / camZ;
+                let sy = cy - y2 * focal / camZ;
+                let pointR = Math.max(0.6, 3.2 * (CAM_Z / camZ));
+
+                // --- the actual full-screen burst: displace in SCREEN space, not world space,
+                //     so it can never asymptote back down to a small cluster ---
+                if (explodeProgress > 0) {
+                    sx += explodeDirX[i] * spreadEase * maxSpread * explodeSpeed[i];
+                    sy += explodeDirY[i] * spreadEase * maxSpread * explodeSpeed[i];
+                    pointR *= (1 + explodeProgress * 2.4);
+                }
+
+                let ox = 0, oy = 0;
+                for (const r of activeRipples) {
+                    const rx = r.x - window.scrollX, ry = r.y - window.scrollY;
+                    const dx = sx - rx, dy = sy - ry, dist = Math.sqrt(dx * dx + dy * dy);
+                    const ringVal = Math.exp(-Math.pow((dist - r.age * Math.min(W, H) * 0.9) / (Math.min(W, H) * 0.07), 2));
+                    const fade = 1 - r.age / LIFETIME;
+                    const amp = ringVal * fade * (Math.min(W, H) * 0.05);
+                    const d = dist > 0.0001 ? dist : 0.0001;
+                    ox += (dx / d) * amp; oy += (dy / d) * amp;
+                }
+                sx += ox; sy += oy;
+
+                const bc = baseColors[i];
+                const rr = Math.round(bc[0] + (255 - bc[0]) * bgT * 0.9), gg = Math.round(bc[1] + (214 - bc[1]) * bgT * 0.9), bb = Math.round(bc[2] + (235 - bc[2]) * bgT * 0.9);
+                const twinkle = 0.55 + 0.45 * Math.sin(t * 2 + seeds[i] * 8);
+
+                ctx.beginPath();
+                ctx.arc(sx, sy, pointR, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(${rr},${gg},${bb},${(twinkle * 0.9 * explodeAlpha).toFixed(2)})`;
+                ctx.fill();
+            }
+
+            renderWaveText(t);
+            renderAboutIndex(activeRipples);
+            requestAnimationFrame(render);
+        }
+
+        /* ============================================================
+           TEXT: staggered letter-by-letter entrance PER SCENE, combined
+           with the shared ripple bump every frame.
+           ============================================================ */
+        function buildWaveSpans(root) {
+            const spans = [];
+            function wrap(node, parent) {
+                if (node.nodeType === 3) {
+                    for (const ch of node.textContent) {
+                        if (ch === ' ') { parent.appendChild(document.createTextNode(' ')); continue; }
+                        if (ch === '\n') continue;
+                        const span = document.createElement('span');
+                        span.className = 'ch'; span.textContent = ch;
+                        span.style.opacity = '0'; span.style.transform = 'translateY(26px)';
+                        span._triggerAt = Infinity;
+                        parent.appendChild(span); spans.push(span);
+                    }
+                } else if (node.nodeName === 'BR') { parent.appendChild(document.createElement('br')); }
+                else {
+                    const clone = document.createElement(node.nodeName);
+                    for (const a of node.attributes || []) clone.setAttribute(a.name, a.value);
+                    parent.appendChild(clone);
+                    node.childNodes.forEach(c => wrap(c, clone));
+                }
+            }
+            const html = root.innerHTML;
+            root.innerHTML = '';
+            const walker = document.createElement('div'); walker.innerHTML = html;
+            walker.childNodes.forEach(n => wrap(n, root));
+            return spans;
+        }
+
+        const scenes = [...document.querySelectorAll('#sections .scene')];
+        const sceneSpans = scenes.map(scene => {
+            const waveEls = [...scene.querySelectorAll('.wave')];
+            return waveEls.flatMap(el => buildWaveSpans(el));
+        });
+        const allWaveSpans = sceneSpans.flat();
+
+        const sceneObserver = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) return;
+                const idx = scenes.indexOf(entry.target);
+                const spans = sceneSpans[idx];
+                if (!spans || spans.length === 0 || spans[0]._started) return;
+                spans[0]._started = true; // mark so this scene only triggers once
+                const now = performance.now() / 1000;
+                spans.forEach((span, i) => { span._triggerAt = now + i * 0.035; }); // one-by-one stagger
+            });
+        }, { threshold: 0.35 });
+        scenes.forEach(s => sceneObserver.observe(s));
+
+        function renderWaveText(t) {
+            for (const span of allWaveSpans) {
+                const rect = span.getBoundingClientRect();
+                if (rect.bottom < -80 || rect.top > innerHeight + 80) continue;
+
+                const age = t - span._triggerAt;
+                const progress = Math.min(Math.max(age / 0.5, 0), 1);
+                const eased = 1 - Math.pow(1 - progress, 3);
+                span.style.opacity = eased.toFixed(2);
+                const entranceY = (1 - eased) * 26;
+
+                const cxp = rect.left + rect.width / 2 + window.scrollX, cyp = rect.top + rect.height / 2 + window.scrollY;
+                let bump = 0;
+                const activeRipples = getActiveRipples(t);
+                for (const r of activeRipples) {
+                    const dx = cxp - r.x, dy = cyp - r.y, dist = Math.sqrt(dx * dx + dy * dy);
+                    const ringVal = Math.exp(-Math.pow((dist - r.age * 550) / 70, 2));
+                    const fade = 1 - r.age / LIFETIME;
+                    bump = Math.max(bump, ringVal * fade * 16);
+                }
+                span.style.transform = `translateY(${(entranceY - bump).toFixed(1)}px)`;
+            }
+        }
+
+        /* ============================================================
+           ABOUT PAGE — spotlight + ripple bump (unchanged)
+           ============================================================ */
+        const idxContainer = document.getElementById('idxContainer');
+        const idxBright = document.getElementById('idxBright');
+        const brightRows = idxBright.querySelectorAll('.idx-row');
+        const dimRows = idxContainer.querySelectorAll('.idx-layer.dim .idx-row');
+        idxContainer.addEventListener('mousemove', e => {
+            const r = idxContainer.getBoundingClientRect();
+            idxBright.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+            idxBright.style.setProperty('--my', (e.clientY - r.top) + 'px');
+        });
+        idxContainer.addEventListener('mouseleave', () => { idxBright.style.setProperty('--mx', '-500px'); idxBright.style.setProperty('--my', '-500px'); });
+        function renderAboutIndex(activeRipples) {
+            brightRows.forEach((row, i) => {
+                const rect = row.getBoundingClientRect();
+                const cxp = rect.left + rect.width / 2 + window.scrollX, cyp = rect.top + rect.height / 2 + window.scrollY;
+                let bump = 0;
+                for (const r of activeRipples) {
+                    const dx = cxp - r.x, dy = cyp - r.y, dist = Math.sqrt(dx * dx + dy * dy);
+                    const ringVal = Math.exp(-Math.pow((dist - r.age * 500) / 90, 2));
+                    const fade = 1 - r.age / LIFETIME;
+                    bump = Math.max(bump, ringVal * fade * 10);
+                }
+                const tform = `translateY(${-bump}px)`;
+                row.style.transform = tform; dimRows[i].style.transform = tform;
+            });
+        }
+        const dotsWrap = document.getElementById('dots');
+        for (let i = 0; i < 45; i++) {
+            const d = document.createElement('span');
+            const size = 2 + Math.random() * 4;
+            d.style.width = size + 'px'; d.style.height = size + 'px';
+            d.style.left = (Math.random() * 100) + '%'; d.style.top = (Math.random() * 100) + '%';
+            dotsWrap.appendChild(d);
+        }
+
+        render();
+    </script>
+</body>
+
+</html>
